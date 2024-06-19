@@ -1,36 +1,45 @@
 from pynput import keyboard
+import datetime
 
-def on_press(key: (keyboard.Key | keyboard.KeyCode | None)) -> None:
-    try:
-        print("Struct: ", key.__dict__)
-        if key.vk == 76:
-            print(f'{key} pressed')
-    except AttributeError:
-        return
 
-def on_release(key: (keyboard.Key | keyboard.KeyCode | None)) -> bool:
-    print(f'{key} released')
-    if key == keyboard.Key.esc:
-        # Stop listener
-        return False
-    return True
+def get_path(stream_name: str) -> str:
+    return f"data/{stream_name}.txt"
+
+
+def append_timestamp_to_file(file_path: str, event_name: str) -> None:
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(file_path, "a") as file:
+        file.write(f"{event_name}: {timestamp}\n")
+
+
+def start_stream(stream_name: str) -> None:
+    file_path = get_path(stream_name)
+    append_timestamp_to_file(file_path, "start")
+
+
+def flag_moment(stream_name) -> None:
+    file_path = get_path(stream_name)
+    append_timestamp_to_file(file_path, "flag")
+
+
+def listen(stream_name: str) -> None:
+    def on_release(key: (keyboard.Key | keyboard.KeyCode | None)) -> None:
+        try:
+            if key.vk == 76:
+                flag_moment(stream_name)
+        except AttributeError:
+            pass
+
+    start_stream(stream_name)
+    with keyboard.Listener(on_release=on_release) as listener:
+        listener.join()
 
 
 if __name__ == "__main__":
     print("Listening to StreamPunk device.")
-    # Collect events until released
-    with keyboard.Listener(
-            on_press=on_press,
-            on_release=on_release) as listener:
-        listener.join()
+    stream_name = "testing"
+    listen(stream_name)
     print("Bye!")
-
-    # listener = keyboard.Listener(
-    #     on_press=on_press,
-    #     on_release=on_release)
-    # listener.start()
-
-
 
 
 
